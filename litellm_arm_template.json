@@ -1,0 +1,153 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerapps_litellm_name": {
+            "defaultValue": "litellm",
+            "type": "String"
+        },
+        "managedEnvironments_litellm_container_name": {
+            "defaultValue": "litellm-container",
+            "type": "String"
+        },
+        "litellm_master_key": {
+            "defaultValue": "sk-ABCDEF1234567890123",
+            "type": "String"
+        },
+        "litellm_salt_key": {
+            "defaultValue": "sk-ABCDEF1234567890123",
+            "type": "String"
+        },
+        "litellm_database_admin_username": {
+            "defaultValue": "litellmuser",
+            "type": "String"
+        },
+        "litellm_database_password": {
+            "defaultValue": "<YOUR PASS HERE>",
+            "type": "String"
+        },
+        "litellm_database_name": {
+            "defaultValue": "litellm",
+            "type": "String"
+        },
+        "litellm_database_servername": {
+            "defaultValue": "litellm-server-test",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.App/managedEnvironments",
+            "apiVersion": "2024-10-02-preview",
+            "name": "[parameters('managedEnvironments_litellm_container_name')]",
+            "location": "East US",
+            "properties": {
+                "zoneRedundant": false,
+                "kedaConfiguration": {},
+                "daprConfiguration": {},
+                "customDomainConfiguration": {},
+                "workloadProfiles": [
+                    {
+                        "workloadProfileType": "Consumption",
+                        "name": "Consumption",
+                        "enableFips": false
+                    }
+                ],
+                "peerAuthentication": {
+                    "mtls": {
+                        "enabled": false
+                    }
+                },
+                "peerTrafficConfiguration": {
+                    "encryption": {
+                        "enabled": false
+                    }
+                },
+                "publicNetworkAccess": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.App/containerapps",
+            "apiVersion": "2024-10-02-preview",
+            "name": "[parameters('containerapps_litellm_name')]",
+            "location": "East US",
+            "dependsOn": [
+                "[resourceId('Microsoft.App/managedEnvironments', parameters('managedEnvironments_litellm_container_name'))]"
+            ],
+            "identity": {
+                "type": "None"
+            },
+            "properties": {
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('managedEnvironments_litellm_container_name'))]",
+                "environmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('managedEnvironments_litellm_container_name'))]",
+                "workloadProfileName": "Consumption",
+                "configuration": {
+                    "activeRevisionsMode": "Single",
+                    "ingress": {
+                        "external": true,
+                        "targetPort": 0,
+                        "exposedPort": 0,
+                        "transport": "Auto",
+                        "traffic": [
+                            {
+                                "weight": 100,
+                                "latestRevision": true
+                            }
+                        ],
+                        "allowInsecure": false,
+                        "clientCertificateMode": "Accept",
+                        "stickySessions": {
+                            "affinity": "none"
+                        }
+                    },
+                    "identitySettings": [],
+                    "maxInactiveRevisions": 100
+                },
+                "template": {
+                    "containers": [
+                        {
+                            "image": "[concat('ghcr.io/berriai/litellm:main-latest')]",
+                            "imageType": "ContainerImage",
+                            "name": "chat",
+                            "args": [],
+                            "env": [
+                                {
+                                    "name": "LITELLM_MASTER_KEY",
+                                    "value": "parameters('litellm_master_key')"
+                                },
+                                {
+                                    "name": "LITELLM_SALT_KEY",
+                                    "value": "parameters('litellm_salt_key')"
+                                },
+                                {
+                                    "name": "DATABASE_URL",
+                                    "value": "[concat('postgresql://', parameters('litellm_database_admin_username'),':',parameters('litellm_database_password'),'@',parameters('server_name'),'.postgres.database.azure.com:5432/', parameters('litellm_database_name'))]"
+                                },
+                                {
+                                    "name": "STORE_MODEL_IN_DB",
+                                    "value": "true"
+                                },
+                                {
+                                    "name": "AZURE_API_VERSION",
+                                    "value": "2025-03-01-preview"
+                                }
+                            ],
+                            "resources": {
+                                "cpu": 2,
+                                "memory": "4Gi"
+                            },
+                            "probes": []
+                        }
+                    ],
+                    "scale": {
+                        "minReplicas": 1,
+                        "maxReplicas": 1,
+                        "cooldownPeriod": 300,
+                        "pollingInterval": 30
+                    }
+                }
+            }
+        }        
+    ]
+}
