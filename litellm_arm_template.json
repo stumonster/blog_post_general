@@ -114,11 +114,11 @@
                             "env": [
                                 {
                                     "name": "LITELLM_MASTER_KEY",
-                                    "value": "parameters('litellm_master_key')"
+                                    "value": "[parameters('litellm_master_key')]"
                                 },
                                 {
                                     "name": "LITELLM_SALT_KEY",
-                                    "value": "parameters('litellm_salt_key')"
+                                    "value": "[parameters('litellm_salt_key')]"
                                 },
                                 {
                                     "name": "DATABASE_URL",
