@@ -122,7 +122,7 @@
                                 },
                                 {
                                     "name": "DATABASE_URL",
-                                    "value": "[concat('postgresql://', parameters('litellm_database_admin_username'),':',parameters('litellm_database_password'),'@',parameters('server_name'),'.postgres.database.azure.com:5432/', parameters('litellm_database_name'))]"
+                                    "value": "[concat('postgresql://', parameters('litellm_database_admin_username'),':',parameters('litellm_database_password'),'@',parameters('litellm_database_servername'),'.postgres.database.azure.com:5432/', parameters('litellm_database_name'))]"
                                 },
                                 {
                                     "name": "STORE_MODEL_IN_DB",
